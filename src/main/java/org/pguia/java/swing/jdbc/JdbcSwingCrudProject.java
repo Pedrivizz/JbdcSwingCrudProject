@@ -1,6 +1,10 @@
 package org.pguia.java.swing.jdbc;
 
 
+import org.pguia.java.swing.jdbc.model.Product;
+import org.pguia.java.swing.jdbc.repository.IProductRepository;
+import org.pguia.java.swing.jdbc.repository.ProductRepositoryImpl;
+
 import javax.swing.*;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
@@ -16,6 +20,7 @@ public class JdbcSwingCrudProject extends JFrame {
     private JTextField priceField = new JTextField();
     private JTextField quantityField = new JTextField();
     private ProductTableModel tableModel = new ProductTableModel();
+    private IProductRepository productRepository;
 
     private long id;
     private int row;
@@ -25,6 +30,7 @@ public class JdbcSwingCrudProject extends JFrame {
         p = getContentPane();
         p.setLayout(new BorderLayout(20, 10));
 
+         productRepository = new ProductRepositoryImpl();
         JPanel formPanel = new JPanel(new GridLayout(4, 2, 20, 10));
         formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         JButton buttonSave = new JButton("Guardar");
@@ -69,8 +75,9 @@ public class JdbcSwingCrudProject extends JFrame {
                 JOptionPane.showMessageDialog(null, errors.toArray(),
                         "Error en la validación", JOptionPane.ERROR_MESSAGE);
             } else {
+                Product productDb = productRepository.save(new Product(id == 0?null : id, name, price, quantity));
                 if (id == 0) {
-                    Object[] product = new Object[]{System.currentTimeMillis(), name, price, quantity, "remove"};
+                    Object[] product = new Object[]{productDb.getId(), name, price, quantity, "remove"};
                     tableModel.getRows().add(product);
                     tableModel.fireTableDataChanged();
 
@@ -103,6 +110,7 @@ public class JdbcSwingCrudProject extends JFrame {
                             "?", "Cuidado Eliminar Item", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
 
                     if(option == JOptionPane.OK_OPTION) {
+                        productRepository.delete((long) tableModel.getValueAt(row, 0));
                         tableModel.getRows().remove(row);
                         tableModel.fireTableDataChanged();
                     }
@@ -139,8 +147,17 @@ public class JdbcSwingCrudProject extends JFrame {
 
     private class ProductTableModel extends AbstractTableModel {
 
-        private String[] columns = new String[]{"Id", "Nombre", "Precio", "Cantidad"};
+        private String[] columns = new String[]{"Id", "Nombre", "Precio", "Cantidad", "Delete"};
         private List<Object[]> rows = new ArrayList<>();
+
+        public ProductTableModel() {
+            IProductRepository productRepository = new ProductRepositoryImpl();
+            List<Product> products = productRepository.findAll();
+            for(Product product: products) {
+                Object[] row = {product.getId(), product.getName(), product.getPrice(), product.getQuantity(), "remove"};
+                rows.add(row);
+            }
+        }
 
         public List<Object[]> getRows() {
             return rows;
