@@ -1,6 +1,5 @@
 package org.pguia.java.swing.jdbc;
 
-
 import org.pguia.java.swing.jdbc.model.Product;
 import org.pguia.java.swing.jdbc.repository.IProductRepository;
 import org.pguia.java.swing.jdbc.repository.ProductRepositoryImpl;
@@ -30,7 +29,7 @@ public class JdbcSwingCrudProject extends JFrame {
         p = getContentPane();
         p.setLayout(new BorderLayout(20, 10));
 
-         productRepository = new ProductRepositoryImpl();
+        productRepository = new ProductRepositoryImpl();
         JPanel formPanel = new JPanel(new GridLayout(4, 2, 20, 10));
         formPanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
         JButton buttonSave = new JButton("Guardar");
@@ -106,7 +105,7 @@ public class JdbcSwingCrudProject extends JFrame {
 
                 if(row > -1 && column == 4) {
                     int option = JOptionPane.showConfirmDialog(null, "Esta seguro que desea eliminar el registro " +
-                                    tableModel.getValueAt(row, 1).toString() +
+                            tableModel.getValueAt(row, 1).toString() +
                             "?", "Cuidado Eliminar Item", JOptionPane.OK_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
 
                     if(option == JOptionPane.OK_OPTION) {
