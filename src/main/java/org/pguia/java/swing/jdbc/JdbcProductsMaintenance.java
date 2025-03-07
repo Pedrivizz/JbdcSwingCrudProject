@@ -12,9 +12,9 @@ import java.util.List;
 
 public class JdbcProductsMaintenance extends JFrame {
     private Container p;
-    private IProductRepository productRepository;
-    private ProductTableModel productTableModel;
-    private JTable jTable;
+    private final IProductRepository productRepository;
+    private final ProductTableModel productTableModel;
+    private final JTable jTable;
 
     public JdbcProductsMaintenance() {
         setTitle("Products Maintenance");
@@ -37,6 +37,15 @@ public class JdbcProductsMaintenance extends JFrame {
         productRepository = new ProductRepositoryImpl();
         productTableModel = new ProductTableModel();
         jTable = new JTable(productTableModel);
+
+        // Ajustar el tamaño de la tabla
+        jTable.setAutoResizeMode(JTable.AUTO_RESIZE_OFF);
+        jTable.setFillsViewportHeight(true);
+
+        int[] columnsWidths = {50, 150, 80, 80, 120, 120, 100, 200};
+        for (int i = 0; i < jTable.getColumnCount(); i++) {
+            jTable.getColumnModel().getColumn(i).setPreferredWidth(columnsWidths[i]);
+        }
 
         JButton buttonAgregar = crearButton("Agregar");
         JButton buttonModificar = crearButton("Modificar");
@@ -62,6 +71,7 @@ public class JdbcProductsMaintenance extends JFrame {
 
         JPanel tablePanel = new JPanel(new FlowLayout());
         JScrollPane scroll = new JScrollPane(jTable);
+        scroll.setPreferredSize(new Dimension(700, 400));
         tablePanel.add(scroll);
 
         topPanel.add(Box.createVerticalStrut(10));
@@ -73,7 +83,7 @@ public class JdbcProductsMaintenance extends JFrame {
         p.add(tablePanel, BorderLayout.SOUTH);
 
         setContentPane(p);
-        setSize(700, 600);
+        setSize(800, 600);
         setVisible(true);
         setDefaultCloseOperation(EXIT_ON_CLOSE);
     }
@@ -94,12 +104,15 @@ public class JdbcProductsMaintenance extends JFrame {
 
     private void agregarProductos() {
         JDialog dialog = new JDialog(this, "Agregar Productos", true);
-        dialog.setSize(300, 200);
-        dialog.setLayout(new GridLayout(4, 2));
+        dialog.setLayout(new GridLayout(8, 2, 5, 5));
 
         JTextField nameField = new JTextField(20);
         JTextField priceField = new JTextField(20);
         JTextField quantityField = new JTextField(20);
+        JTextField categoryField = new JTextField(20);
+        JTextField supplierField = new JTextField(20);
+        JTextField statusField = new JTextField(20);
+        JTextField descriptionField = new JTextField(20);
 
         dialog.add(new JLabel("Nombre: "));
         dialog.add(nameField);
@@ -107,12 +120,24 @@ public class JdbcProductsMaintenance extends JFrame {
         dialog.add(priceField);
         dialog.add(new JLabel("Cantidad: "));
         dialog.add(quantityField);
+        dialog.add(new JLabel("Categoria: "));
+        dialog.add(categoryField);
+        dialog.add(new JLabel("Proveedor: "));
+        dialog.add(supplierField);
+        dialog.add(new JLabel("Estado: "));
+        dialog.add(statusField);
+        dialog.add(new JLabel("Descripcion: "));
+        dialog.add(descriptionField);
 
         JButton buttonGuardar = new JButton("Guardar");
         buttonGuardar.addActionListener(e -> {
             String name = nameField.getText();
             int price = 0;
             int quantity = 0;
+            String category = categoryField.getText();
+            String supplier = supplierField.getText();
+            String status = statusField.getText();
+            String description = descriptionField.getText();
             try {
                 price = Integer.parseInt(priceField.getText());
                 quantity = Integer.parseInt(quantityField.getText());
@@ -131,11 +156,31 @@ public class JdbcProductsMaintenance extends JFrame {
                 errors.add("La cantidad no debe ser cero");
             }
 
-            productRepository.save(new Product(null, name, price, quantity));
+            if(category.isBlank()) {
+                errors.add("Debe ingresar la categoría");
+            }
+
+            if(supplier.isBlank()) {
+                errors.add("Debe ingresar la proveedor");
+            }
+
+            if(status.isBlank()) {
+                errors.add("Debe ingresar el estado");
+            }
+
+            if(description.isBlank()) {
+                errors.add("Debe ingresar la descripción");
+            }
+
+            productRepository.save(new Product(null, name, price, quantity, category, supplier, status, description));
+            JOptionPane.showMessageDialog(this, "Producto agregado correctamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
             dialog.dispose();
         });
-        JOptionPane.showMessageDialog(this, "Producto agregado correctamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+        dialog.add(new JLabel()); // Espacio vacío para alineación
         dialog.add(buttonGuardar);
+
+        dialog.pack(); // Ajustar el tamaño automáticamente al contenido
+        dialog.setLocationRelativeTo(this); // centrar la pantalla
         dialog.setVisible(true);
     }
 
@@ -153,6 +198,10 @@ public class JdbcProductsMaintenance extends JFrame {
         String name = (String) productTableModel.getValueAt(selectedRow, 1);
         int price = (int) productTableModel.getValueAt(selectedRow, 2);
         int quantity = (int) productTableModel.getValueAt(selectedRow, 3);
+        String category = (String) productTableModel.getValueAt(selectedRow, 4);
+        String supplier = (String) productTableModel.getValueAt(selectedRow, 5);
+        String status = (String) productTableModel.getValueAt(selectedRow, 6);
+        String description = (String) productTableModel.getValueAt(selectedRow, 7);
 
         // Confirmación antes de modificar
         int confirm = JOptionPane.showConfirmDialog(this,
@@ -163,12 +212,15 @@ public class JdbcProductsMaintenance extends JFrame {
         }
         // Crear cuadro de diálogo para modificar
         JDialog dialog = new JDialog(this, "Modificar Producto", true);
-        dialog.setSize(300, 200);
-        dialog.setLayout(new GridLayout(4, 2));
+        dialog.setLayout(new GridLayout(8, 2, 5, 5));
 
         JTextField nameField = new JTextField(20);
         JTextField priceField = new JTextField(20);
         JTextField quantityField = new JTextField(20);
+        JTextField categoryField = new JTextField(20);
+        JTextField supplierField = new JTextField(20);
+        JTextField statusField = new JTextField(20);
+        JTextField descriptionField = new JTextField(20);
 
         dialog.add(new JLabel("Nombre: "));
         dialog.add(nameField);
@@ -176,12 +228,24 @@ public class JdbcProductsMaintenance extends JFrame {
         dialog.add(priceField);
         dialog.add(new JLabel("Cantidad: "));
         dialog.add(quantityField);
+        dialog.add(new JLabel("Categoria: "));
+        dialog.add(categoryField);
+        dialog.add(new JLabel("Proveedor: "));
+        dialog.add(supplierField);
+        dialog.add(new JLabel("Estado: "));
+        dialog.add(statusField);
+        dialog.add(new JLabel("Descripcion: "));
+        dialog.add(descriptionField);
 
         JButton buttonActualizar = new JButton("Actualizar");
         buttonActualizar.addActionListener(e -> {
             String newName = nameField.getText();
             int newPrice = 0;
             int newQuantity = 0;
+            String newCategory = categoryField.getText();
+            String newSupplier = supplierField.getText();
+            String newStatus = statusField.getText();
+            String newDescription= descriptionField.getText();
             try {
                 newPrice = Integer.parseInt(priceField.getText());
                 newQuantity = Integer.parseInt(quantityField.getText());
@@ -191,16 +255,36 @@ public class JdbcProductsMaintenance extends JFrame {
             }
 
             if (newName.isBlank()) {
-                JOptionPane.showMessageDialog(dialog, "Debe ingresar el nombre.", "Error", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(dialog, "Debe ingresar el nombre", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (newCategory.isBlank()) {
+                JOptionPane.showMessageDialog(dialog, "Debe ingresar la categoría", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (newSupplier.isBlank()) {
+                JOptionPane.showMessageDialog(dialog, "Debe ingresar el proveedor", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (newStatus.isBlank()) {
+                JOptionPane.showMessageDialog(dialog, "Debe ingresar el estado", "Error", JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+            if (newDescription.isBlank()) {
+                JOptionPane.showMessageDialog(dialog, "Debe ingresar la descripción", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
             // Actualizar producto de base de datos
-            productRepository.save(new Product(id, newName, newPrice, newQuantity));
+            productRepository.save(new Product(id, newName, newPrice, newQuantity, newCategory, newSupplier, newStatus, newDescription));
 
             //Reflejar cambios en la tabla
             productTableModel.setValueAt(newName, selectedRow, 1);
             productTableModel.setValueAt(newPrice, selectedRow, 2);
             productTableModel.setValueAt(newQuantity, selectedRow, 3);
+            productTableModel.setValueAt(newCategory, selectedRow, 4);
+            productTableModel.setValueAt(newSupplier, selectedRow, 5);
+            productTableModel.setValueAt(newStatus, selectedRow, 6);
+            productTableModel.setValueAt(newDescription, selectedRow, 7);
             productTableModel.fireTableDataChanged();
             JOptionPane.showMessageDialog(this, "Producto modificado correctamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
             dialog.dispose();
@@ -247,9 +331,13 @@ public class JdbcProductsMaintenance extends JFrame {
         String name = (String) productTableModel.getValueAt(selectedRow, 1);
         int price = (int) productTableModel.getValueAt(selectedRow, 2);
         int quantity = (int) productTableModel.getValueAt(selectedRow, 3);
+        String category = (String) productTableModel.getValueAt(selectedRow, 4);
+        String supplier = (String) productTableModel.getValueAt(selectedRow, 5);
+        String status = (String) productTableModel.getValueAt(selectedRow, 6);
+        String description = (String) productTableModel.getValueAt(selectedRow, 7);
 
         // Crear un panel para mostrar la información
-        JPanel panelInformation = new JPanel(new GridLayout(4, 2));
+        JPanel panelInformation = new JPanel(new GridLayout(8, 2));
 
         panelInformation.add(new JLabel("ID: "));
         panelInformation.add(new JLabel(String.valueOf(id)));
@@ -259,10 +347,18 @@ public class JdbcProductsMaintenance extends JFrame {
         panelInformation.add(new JLabel(String.valueOf(price)));
         panelInformation.add(new JLabel("Cantidad: "));
         panelInformation.add(new JLabel(String.valueOf(quantity)));
+        panelInformation.add(new JLabel("Categoria: "));
+        panelInformation.add(new JLabel(String.valueOf(category)));
+        panelInformation.add(new JLabel("Proveedor: "));
+        panelInformation.add(new JLabel(String.valueOf(supplier)));
+        panelInformation.add(new JLabel("Estado: "));
+        panelInformation.add(new JLabel(String.valueOf(status)));
+        panelInformation.add(new JLabel("Descripción: "));
+        panelInformation.add(new JLabel(String.valueOf(description)));
 
         // Crear un cuadro de diálogo para mostrar la información
         JDialog dialog = new JDialog(this, "Información de Producto", true);
-        dialog.setLayout(new BorderLayout(10, 10));
+        dialog.setLayout(new BorderLayout(5, 5));
         dialog.add(panelInformation, BorderLayout.CENTER);
 
         // Botón para cerrar
@@ -280,14 +376,15 @@ public class JdbcProductsMaintenance extends JFrame {
 
     private class ProductTableModel extends AbstractTableModel {
 
-        private String[] columns = new String[]{"Id", "Nombre", "Precio", "Cantidad"};
+        private String[] columns = new String[]{"Id", "Nombre", "Precio", "Cantidad", "Categoria", "Proveedor", "Estado", "Descripcion"};
         private java.util.List<Object[]> rows = new ArrayList<>();
 
         public ProductTableModel() {
             IProductRepository productRepository = new ProductRepositoryImpl();
             java.util.List<Product> products = productRepository.findAll();
             for(Product product: products) {
-                Object[] row = {product.getId(), product.getName(), product.getPrice(), product.getQuantity()};
+                Object[] row = {product.getId(), product.getName(), product.getPrice(), product.getQuantity(), product.getCategory(), product.getSupplier(),
+                                product.getStatus(), product.getDescription()};
                 rows.add(row);
             }
         }
