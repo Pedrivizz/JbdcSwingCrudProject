@@ -19,7 +19,11 @@ public class ProductRepositoryImpl implements IProductRepository{
                 Product product = new Product(rs.getLong("id"),
                         rs.getString("name"),
                         rs.getInt("price"),
-                        rs.getInt("quantity"));
+                        rs.getInt("quantity"),
+                        rs.getString("category"),
+                        rs.getString("supplier"),
+                        rs.getString("status"),
+                        rs.getString("description"));
                 products.add(product);
             }
         } catch (SQLException e) {
@@ -39,7 +43,11 @@ public class ProductRepositoryImpl implements IProductRepository{
                     product = new Product(rs.getLong("id"),
                             rs.getString("name"),
                             rs.getInt("price"),
-                            rs.getInt("quantity"));
+                            rs.getInt("quantity"),
+                            rs.getString("category"),
+                            rs.getString("supplier"),
+                            rs.getString("status"),
+                            rs.getString("description"));
                 }
             }
         } catch (SQLException e) {
@@ -52,9 +60,9 @@ public class ProductRepositoryImpl implements IProductRepository{
     public Product save(Product product) {
         String sql = "";
         if(product.getId() != null && product.getId() > 0) {
-            sql = "UPDATE products SET name=?, price=?, quantity=? WHERE id=?";
+            sql = "UPDATE products SET name=?, price=?, quantity=?, category=?, supplier=?, status=?, description=? WHERE id=?";
         } else {
-            sql = "INSERT INTO products(name, price, quantity) VALUES(?,?,?)";
+            sql = "INSERT INTO products(name, price, quantity, category, supplier, status, description) VALUES(?,?,?,?,?.?,?)";
         }
 
         try(Connection conn = ConnectionDataBase.getConnection();
@@ -62,8 +70,12 @@ public class ProductRepositoryImpl implements IProductRepository{
             stmt.setString(1, product.getName());
             stmt.setInt(2, product.getPrice());
             stmt.setInt(3, product.getQuantity());
+            stmt.setString(4, product.getCategory());
+            stmt.setString(5, product.getSupplier());
+            stmt.setString(6,product.getStatus());
+            stmt.setString(7, product.getDescription());
             if(product.getId() != null && product.getId() > 0) {
-                stmt.setLong(4, product.getId());
+                stmt.setLong(8, product.getId());
             }
             int affectedRow = stmt.executeUpdate();
             if(affectedRow > 0 && (product.getId() == null || product.getId() == 0)) {
