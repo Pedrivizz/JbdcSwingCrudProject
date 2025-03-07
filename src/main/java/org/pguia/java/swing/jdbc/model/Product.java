@@ -5,14 +5,24 @@ public class Product {
     private String name;
     private Integer price;
     private Integer quantity;
+    private String category;
+    private String supplier;
+    private String status;
+    private String description;
+
 
     public Product() {}
 
-    public Product(Long id, String name, Integer price, Integer quantity) {
+    public Product(Long id, String name, Integer price, Integer quantity, String category,
+                   String supplier, String status, String description) {
         this.id = id;
         this.name = name;
         this.price = price;
         this.quantity = quantity;
+        this.category = category;
+        this.supplier = supplier;
+        this.status = status;
+        this.description = description;
     }
 
     public Long getId() {
@@ -45,5 +55,37 @@ public class Product {
 
     public void setQuantity(Integer quantity) {
         this.quantity = quantity;
+    }
+
+    public String getCategory() {
+        return category;
+    }
+
+    public void setCategory(String category) {
+        this.category = category;
+    }
+
+    public String getSupplier() {
+        return supplier;
+    }
+
+    public void setSupplier(String supplier) {
+        this.supplier = supplier;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
     }
 }
