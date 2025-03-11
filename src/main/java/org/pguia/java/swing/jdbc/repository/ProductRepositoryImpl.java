@@ -62,7 +62,7 @@ public class ProductRepositoryImpl implements IProductRepository{
         if(product.getId() != null && product.getId() > 0) {
             sql = "UPDATE products SET name=?, price=?, quantity=?, category=?, supplier=?, status=?, description=? WHERE id=?";
         } else {
-            sql = "INSERT INTO products(name, price, quantity, category, supplier, status, description) VALUES(?,?,?,?,?.?,?)";
+            sql = "INSERT INTO products(name, price, quantity, category, supplier, status, description) VALUES(?,?,?,?,?,?,?)";
         }
 
         try(Connection conn = ConnectionDataBase.getConnection();
