@@ -23,10 +23,16 @@ public class JdbcProductsMaintenance extends JFrame {
         p = getContentPane();
         p.setLayout(new BorderLayout(20, 10));
 
+        // Incluimos una imagen para el icono del programa
+        ImageIcon imageIcon = new ImageIcon(getClass().getResource("/img/logo.png"));
+        setIconImage(imageIcon.getImage());
+
+        // El panel superior del programa
         JPanel topPanel = new JPanel();
         topPanel.setLayout(new BoxLayout(topPanel, BoxLayout.Y_AXIS));
         topPanel.setBackground(new Color(200, 0 ,0));
 
+        // Título para la pantalla
         JLabel title = new JLabel("Mantenimiento de Productos");
         title.setFont(new Font("Times New Roman", Font.BOLD, 22));
         title.setForeground(Color.WHITE);
@@ -47,6 +53,7 @@ public class JdbcProductsMaintenance extends JFrame {
             jTable.getColumnModel().getColumn(i).setPreferredWidth(columnsWidths[i]);
         }
 
+        // Los botones con sus respectivas interacciones.
         JButton buttonAgregar = crearButton("Agregar");
         JButton buttonModificar = crearButton("Modificar");
         JButton buttonEliminar = crearButton("Eliminar");
@@ -59,6 +66,7 @@ public class JdbcProductsMaintenance extends JFrame {
         buttonConsultar.addActionListener(e -> consultarProducto());
         buttonSalir.addActionListener(e -> System.exit(0));
 
+        // El panel de controles
         JPanel panelBotones = new JPanel();
         panelBotones.setLayout(new FlowLayout(FlowLayout.LEFT));
         panelBotones.setBackground(new Color(200, 0 ,0));
@@ -134,13 +142,13 @@ public class JdbcProductsMaintenance extends JFrame {
             String name = nameField.getText();
             int price = 0;
             int quantity = 0;
-            String category = categoryField.getText();
-            String supplier = supplierField.getText();
-            String status = statusField.getText();
-            String description = descriptionField.getText();
+            String category = categoryField.getText().trim();
+            String supplier = supplierField.getText().trim();
+            String status = statusField.getText().trim();
+            String description = descriptionField.getText().trim();
             try {
-                price = Integer.parseInt(priceField.getText());
-                quantity = Integer.parseInt(quantityField.getText());
+                price = Integer.parseInt(priceField.getText().trim());
+                quantity = Integer.parseInt(quantityField.getText().trim());
             } catch (NumberFormatException numberFormatException) {}
 
             List<String> errors = new ArrayList<>();
@@ -172,7 +180,10 @@ public class JdbcProductsMaintenance extends JFrame {
                 errors.add("Debe ingresar la descripción");
             }
 
-            productRepository.save(new Product(null, name, price, quantity, category, supplier, status, description));
+            Product newProduct = new Product(null, name, price, quantity, category, supplier, status, description);
+            productRepository.save(newProduct);
+            actualizarTablaProductos(); // Recargar los datos de la BD y actualizar la tabla
+            productTableModel.fireTableDataChanged(); // Forzar actualización de la tabla
             JOptionPane.showMessageDialog(this, "Producto agregado correctamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
             dialog.dispose();
         });
@@ -290,6 +301,7 @@ public class JdbcProductsMaintenance extends JFrame {
             dialog.dispose();
         });
         dialog.add(buttonActualizar);
+        dialog.pack();
         dialog.setVisible(true);
     }
 
@@ -374,19 +386,37 @@ public class JdbcProductsMaintenance extends JFrame {
         dialog.setVisible(true);
     }
 
+    private void actualizarTablaProductos() {
+        List<Product> productosActualizados = productRepository.findAll(); // Recargar de la base de datos
+        productTableModel.setProductos(productosActualizados); // Actualizar el modelo con los nuevos datos
+        productTableModel.fireTableDataChanged(); // Refrescar la tabla
+    }
+
     private class ProductTableModel extends AbstractTableModel {
 
         private String[] columns = new String[]{"Id", "Nombre", "Precio", "Cantidad", "Categoria", "Proveedor", "Estado", "Descripcion"};
-        private java.util.List<Object[]> rows = new ArrayList<>();
+        private List<Object[]> rows = new ArrayList<>();
+        List<Product> products;
 
         public ProductTableModel() {
             IProductRepository productRepository = new ProductRepositoryImpl();
-            java.util.List<Product> products = productRepository.findAll();
+            products = productRepository.findAll();
             for(Product product: products) {
                 Object[] row = {product.getId(), product.getName(), product.getPrice(), product.getQuantity(), product.getCategory(), product.getSupplier(),
                                 product.getStatus(), product.getDescription()};
                 rows.add(row);
             }
+        }
+
+        public void setProductos(List<Product> productos) {
+            this.products = productos;
+            rows.clear();
+            for(Product product: products) {
+                Object[] row = {product.getId(), product.getName(), product.getPrice(), product.getQuantity(), product.getCategory(), product.getSupplier(),
+                        product.getStatus(), product.getDescription()};
+                rows.add(row);
+            }
+            fireTableDataChanged(); // Notificar actualización de la tabla
         }
 
         public List<Object[]> getRows() {
