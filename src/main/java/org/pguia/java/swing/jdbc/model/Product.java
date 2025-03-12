@@ -9,7 +9,7 @@ public class Product {
     private String supplier;
     private String status;
     private String description;
-
+    private String imagePath;
 
     public Product() {}
 
@@ -87,5 +87,13 @@ public class Product {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public String getImagePath() {
+        return imagePath;
+    }
+
+    public void setImagePath(String imagePath) {
+        this.imagePath = imagePath;
     }
 }
