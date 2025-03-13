@@ -23,7 +23,8 @@ public class ProductRepositoryImpl implements IProductRepository{
                         rs.getString("category"),
                         rs.getString("supplier"),
                         rs.getString("status"),
-                        rs.getString("description"));
+                        rs.getString("description"),
+                        rs.getBytes("imagen"));
                 products.add(product);
             }
         } catch (SQLException e) {
@@ -47,7 +48,8 @@ public class ProductRepositoryImpl implements IProductRepository{
                             rs.getString("category"),
                             rs.getString("supplier"),
                             rs.getString("status"),
-                            rs.getString("description"));
+                            rs.getString("description"),
+                            rs.getBytes("imagen"));
                 }
             }
         } catch (SQLException e) {
@@ -60,9 +62,9 @@ public class ProductRepositoryImpl implements IProductRepository{
     public Product save(Product product) {
         String sql = "";
         if(product.getId() != null && product.getId() > 0) {
-            sql = "UPDATE products SET name=?, price=?, quantity=?, category=?, supplier=?, status=?, description=? WHERE id=?";
+            sql = "UPDATE products SET name=?, price=?, quantity=?, category=?, supplier=?, status=?, description=?, imagen=? WHERE id=?";
         } else {
-            sql = "INSERT INTO products(name, price, quantity, category, supplier, status, description) VALUES(?,?,?,?,?,?,?)";
+            sql = "INSERT INTO products(name, price, quantity, category, supplier, status, description, imagen) VALUES(?,?,?,?,?,?,?,?)";
         }
 
         try(Connection conn = ConnectionDataBase.getConnection();
@@ -74,8 +76,15 @@ public class ProductRepositoryImpl implements IProductRepository{
             stmt.setString(5, product.getSupplier());
             stmt.setString(6,product.getStatus());
             stmt.setString(7, product.getDescription());
+
+            if(product.getImage() != null) {
+                stmt.setBytes(8, product.getImage());
+            } else {
+                stmt.setNull(8, Types.BLOB);
+            }
+
             if(product.getId() != null && product.getId() > 0) {
-                stmt.setLong(8, product.getId());
+                stmt.setLong(9, product.getId());
             }
             int affectedRow = stmt.executeUpdate();
             if(affectedRow > 0 && (product.getId() == null || product.getId() == 0)) {
