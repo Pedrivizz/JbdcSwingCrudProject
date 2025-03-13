@@ -9,12 +9,12 @@ public class Product {
     private String supplier;
     private String status;
     private String description;
-    private String imagePath;
+    private byte[] image;
 
     public Product() {}
 
     public Product(Long id, String name, Integer price, Integer quantity, String category,
-                   String supplier, String status, String description) {
+                   String supplier, String status, String description, byte[] image) {
         this.id = id;
         this.name = name;
         this.price = price;
@@ -23,6 +23,7 @@ public class Product {
         this.supplier = supplier;
         this.status = status;
         this.description = description;
+        this.image = image;
     }
 
     public Long getId() {
@@ -89,11 +90,11 @@ public class Product {
         this.description = description;
     }
 
-    public String getImagePath() {
-        return imagePath;
+    public byte[] getImage() {
+        return image;
     }
 
-    public void setImagePath(String imagePath) {
-        this.imagePath = imagePath;
+    public void setImage(byte[] image) {
+        this.image = image;
     }
 }
