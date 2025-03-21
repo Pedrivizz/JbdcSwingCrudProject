@@ -1,12 +1,5 @@
 package org.pguia.java.swing.jdbc;
 
-import net.sf.jasperreports.engine.*;
-import net.sf.jasperreports.engine.design.JasperDesign;
-import net.sf.jasperreports.engine.util.JRLoader;
-import net.sf.jasperreports.engine.xml.JRXmlLoader;
-import net.sf.jasperreports.swing.JRViewer;
-import net.sf.jasperreports.view.JasperViewer;
-import org.pguia.java.swing.jdbc.db.ConnectionDataBase;
 import org.pguia.java.swing.jdbc.model.Product;
 import org.pguia.java.swing.jdbc.repository.IProductRepository;
 import org.pguia.java.swing.jdbc.repository.ProductRepositoryImpl;
