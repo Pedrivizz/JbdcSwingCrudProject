@@ -1,14 +1,31 @@
 package org.pguia.java.swing.jdbc;
 
+import net.sf.jasperreports.engine.*;
+import net.sf.jasperreports.engine.design.JasperDesign;
+import net.sf.jasperreports.engine.util.JRLoader;
+import net.sf.jasperreports.engine.xml.JRXmlLoader;
+import net.sf.jasperreports.swing.JRViewer;
+import net.sf.jasperreports.view.JasperViewer;
+import org.pguia.java.swing.jdbc.db.ConnectionDataBase;
 import org.pguia.java.swing.jdbc.model.Product;
 import org.pguia.java.swing.jdbc.repository.IProductRepository;
 import org.pguia.java.swing.jdbc.repository.ProductRepositoryImpl;
 
+// Java Swing and MySQL Connection Dependencies
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import javax.swing.table.AbstractTableModel;
 import java.awt.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicReference;
 
 public class JdbcProductsMaintenance extends JFrame {
     private Container p;
@@ -49,7 +66,10 @@ public class JdbcProductsMaintenance extends JFrame {
         jTable.setFillsViewportHeight(true);
 
         int[] columnsWidths = {50, 150, 80, 80, 120, 120, 100, 200};
-        for (int i = 0; i < jTable.getColumnCount(); i++) {
+        int columnCount = jTable.getColumnCount();
+        int widthCount = Math.min(columnsWidths.length, columnCount);
+
+        for (int i = 0; i < widthCount; i++) {
             jTable.getColumnModel().getColumn(i).setPreferredWidth(columnsWidths[i]);
         }
 
@@ -75,6 +95,7 @@ public class JdbcProductsMaintenance extends JFrame {
         panelBotones.add(buttonModificar);
         panelBotones.add(buttonEliminar);
         panelBotones.add(buttonConsultar);
+        //panelBotones.add(buttonReporte);
         panelBotones.add(buttonSalir);
 
         JPanel tablePanel = new JPanel(new FlowLayout());
@@ -112,32 +133,92 @@ public class JdbcProductsMaintenance extends JFrame {
 
     private void agregarProductos() {
         JDialog dialog = new JDialog(this, "Agregar Productos", true);
-        dialog.setLayout(new GridLayout(8, 2, 5, 5));
+        dialog.setSize(450, 500);
+        dialog.setLayout(new BorderLayout());
+        // dialog.setLayout(new GridLayout(10, 2, 5, 5));
 
+        // Panel personalizado para separador
+        JPanel panelForm = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                g.setColor(Color.LIGHT_GRAY);
+                g.drawLine(10, getHeight() - 40, getWidth() - 10, 40);
+            }
+        };
+        panelForm.setLayout(null);
+
+        // Posiciones y dimensiones
+        int xLabel = 20, xField = 120, y = 20, widthLabel = 90, widthField = 200, height = 25;
+
+        JLabel nameLabel = new JLabel("Nombre: ");
+        nameLabel.setBounds(xLabel, y, widthLabel, height);
         JTextField nameField = new JTextField(20);
+        nameField.setBounds(xField, y, widthField, height);
+
+        y += 35;
+        JLabel priceLabel = new JLabel("Precio: ");
+        priceLabel.setBounds(xLabel, y, widthLabel, height);
         JTextField priceField = new JTextField(20);
+        priceField.setBounds(xField, y, widthField, height);
+
+        y += 35;
+        JLabel quantityLabel = new JLabel("Cantidad: ");
+        quantityLabel.setBounds(xLabel, y, widthLabel, height);
         JTextField quantityField = new JTextField(20);
+        quantityField.setBounds(xField, y, widthField, height);
+
+        y += 35;
+        JLabel categoryLabel = new JLabel("Categoria: ");
+        categoryLabel.setBounds(xLabel, y, widthLabel, height);
         JTextField categoryField = new JTextField(20);
+        categoryField.setBounds(xField, y, widthField, height);
+
+        y += 35;
+        JLabel supplierLabel = new JLabel("Proveedor: ");
+        supplierLabel.setBounds(xLabel, y, widthLabel, height);
         JTextField supplierField = new JTextField(20);
+        supplierField.setBounds(xField, y, widthField, height);
+
+        y += 35;
+        JLabel statusLabel = new JLabel("Estado: ");
+        statusLabel.setBounds(xLabel, y, widthLabel, height);
         JTextField statusField = new JTextField(20);
+        statusField.setBounds(xField, y, widthField, height);
+
+        y += 35;
+        JLabel descriptionLabel = new JLabel("Descripción: ");
+        descriptionLabel.setBounds(xLabel, y, widthLabel, height);
         JTextField descriptionField = new JTextField(20);
+        descriptionField.setBounds(xField, y, widthField, height);
 
-        dialog.add(new JLabel("Nombre: "));
-        dialog.add(nameField);
-        dialog.add(new JLabel("Precio: "));
-        dialog.add(priceField);
-        dialog.add(new JLabel("Cantidad: "));
-        dialog.add(quantityField);
-        dialog.add(new JLabel("Categoria: "));
-        dialog.add(categoryField);
-        dialog.add(new JLabel("Proveedor: "));
-        dialog.add(supplierField);
-        dialog.add(new JLabel("Estado: "));
-        dialog.add(statusField);
-        dialog.add(new JLabel("Descripcion: "));
-        dialog.add(descriptionField);
+        /// Creamos botón para seleccionar la imagen del producto
+        y += 35;
+        JLabel imageLabel = new JLabel("Imagen: ");
+        imageLabel.setBounds(xLabel, y, widthLabel, height);
+        JButton buttonImage = new JButton("Seleccionar Imagen");
+        buttonImage.setBounds(xField, y, widthField, height);
 
+        JLabel labelImage = new JLabel("Ninguna imagen seleccionada");
+        labelImage.setBounds(xField, y, widthField, height);
+
+        // Para almacenar la imagen seleccionada
+        final File[] selectedFile = {null};
+
+        buttonImage.addActionListener(i -> {
+            JFileChooser fileChooser = new JFileChooser();
+            int rs = fileChooser.showOpenDialog(dialog);
+
+            if(rs == JFileChooser.APPROVE_OPTION) {
+                selectedFile[0] = fileChooser.getSelectedFile();
+                labelImage.setText(selectedFile[0].getName());
+            }
+        });
+
+        y += 60;
         JButton buttonGuardar = new JButton("Guardar");
+        buttonGuardar.setBounds((dialog.getWidth() - 120) / 2, y, 120, height);
+
         buttonGuardar.addActionListener(e -> {
             String name = nameField.getText();
             int price = 0;
@@ -146,51 +227,69 @@ public class JdbcProductsMaintenance extends JFrame {
             String supplier = supplierField.getText().trim();
             String status = statusField.getText().trim();
             String description = descriptionField.getText().trim();
+            byte[] imageBytes = null;
+
+            if (selectedFile[0] != null) {
+                try {
+                    imageBytes = Files.readAllBytes(selectedFile[0].toPath()); // Convertir imagen a bytes
+                } catch (IOException ex) {
+                    JOptionPane.showMessageDialog(dialog,
+                            "Error al leer la imagen: " + ex.getMessage(),
+                            "Error", JOptionPane.ERROR_MESSAGE);
+                    return; // Salir del método si hay un error al leer la imagen.
+                }
+            }
+
             try {
                 price = Integer.parseInt(priceField.getText().trim());
                 quantity = Integer.parseInt(quantityField.getText().trim());
             } catch (NumberFormatException numberFormatException) {}
 
             List<String> errors = new ArrayList<>();
-            if(name.isBlank()) {
-                errors.add("Debe ingresar el nombre");
+            if(name.isBlank()) errors.add("Debe ingresar el nombre");
+            if(price == 0) errors.add("El precio es requerido y numérico");
+            if(quantity == 0) errors.add("La cantidad no debe ser cero");
+            if(category.isBlank()) errors.add("Debe ingresar la categoría");
+            if(supplier.isBlank()) errors.add("Debe ingresar la proveedor");
+            if(status.isBlank()) errors.add("Debe ingresar el estado");
+            if(description.isBlank()) errors.add("Debe ingresar la descripción");
+
+            if(!errors.isEmpty()) {
+                JOptionPane.showMessageDialog(dialog, String.join("\n", errors),
+                        "Errores", JOptionPane.ERROR_MESSAGE);
+                return;
             }
 
-            if(price == 0) {
-                errors.add("El precio es requerido y numérico");
-            }
 
-            if(quantity == 0) {
-                errors.add("La cantidad no debe ser cero");
-            }
-
-            if(category.isBlank()) {
-                errors.add("Debe ingresar la categoría");
-            }
-
-            if(supplier.isBlank()) {
-                errors.add("Debe ingresar la proveedor");
-            }
-
-            if(status.isBlank()) {
-                errors.add("Debe ingresar el estado");
-            }
-
-            if(description.isBlank()) {
-                errors.add("Debe ingresar la descripción");
-            }
-
-            Product newProduct = new Product(null, name, price, quantity, category, supplier, status, description);
+            Product newProduct = new Product(null, name, price, quantity, category, supplier, status, description, imageBytes);
             productRepository.save(newProduct);
             actualizarTablaProductos(); // Recargar los datos de la BD y actualizar la tabla
             productTableModel.fireTableDataChanged(); // Forzar actualización de la tabla
             JOptionPane.showMessageDialog(this, "Producto agregado correctamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
             dialog.dispose();
         });
-        dialog.add(new JLabel()); // Espacio vacío para alineación
-        dialog.add(buttonGuardar);
 
-        dialog.pack(); // Ajustar el tamaño automáticamente al contenido
+        // Agregar componentes
+        panelForm.add(nameLabel);
+        panelForm.add(nameField);
+        panelForm.add(priceLabel);
+        panelForm.add(priceField);
+        panelForm.add(quantityLabel);
+        panelForm.add(quantityField);
+        panelForm.add(categoryLabel);
+        panelForm.add(categoryField);
+        panelForm.add(supplierLabel);
+        panelForm.add(supplierField);
+        panelForm.add(statusLabel);
+        panelForm.add(statusField);
+        panelForm.add(descriptionLabel);
+        panelForm.add(descriptionField);
+        panelForm.add(imageLabel);
+        panelForm.add(buttonImage);
+        panelForm.add(labelImage);
+        panelForm.add(buttonGuardar);
+
+        dialog.add(panelForm, BorderLayout.CENTER);
         dialog.setLocationRelativeTo(this); // centrar la pantalla
         dialog.setVisible(true);
     }
@@ -204,6 +303,14 @@ public class JdbcProductsMaintenance extends JFrame {
             return;
         }
 
+        // Validar que la tabla tenga suficientes columnas
+        if (productTableModel.getColumnCount() < 0) {
+            JOptionPane.showMessageDialog(this,
+                    "Error: La tabla no tiene el número esperado de columnas.",
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
         // Obtener datos del producto seleccionado
         Long id = (Long) productTableModel.getValueAt(selectedRow, 0);
         String name = (String) productTableModel.getValueAt(selectedRow, 1);
@@ -213,6 +320,7 @@ public class JdbcProductsMaintenance extends JFrame {
         String supplier = (String) productTableModel.getValueAt(selectedRow, 5);
         String status = (String) productTableModel.getValueAt(selectedRow, 6);
         String description = (String) productTableModel.getValueAt(selectedRow, 7);
+        AtomicReference<byte[]> imageData = new AtomicReference<>(null);
 
         // Confirmación antes de modificar
         int confirm = JOptionPane.showConfirmDialog(this,
@@ -223,43 +331,104 @@ public class JdbcProductsMaintenance extends JFrame {
         }
         // Crear cuadro de diálogo para modificar
         JDialog dialog = new JDialog(this, "Modificar Producto", true);
-        dialog.setLayout(new GridLayout(8, 2, 5, 5));
+        dialog.setSize(450, 500);
+        dialog.setLayout(new BorderLayout());
 
-        JTextField nameField = new JTextField(20);
-        JTextField priceField = new JTextField(20);
-        JTextField quantityField = new JTextField(20);
-        JTextField categoryField = new JTextField(20);
-        JTextField supplierField = new JTextField(20);
-        JTextField statusField = new JTextField(20);
-        JTextField descriptionField = new JTextField(20);
+        JPanel panelForm = new JPanel() {
+            @Override
+            protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                g.setColor(Color.LIGHT_GRAY);
+                g.drawLine(10, getHeight() - 40, getWidth() - 10, 40);
+            }
+        };
+        panelForm.setLayout(null);
+        // Posiciones y dimensiones fijas
+        int xLabel = 20, xField = 120, y = 20, widthLabel = 90, widthField = 200, height = 25;
 
-        dialog.add(new JLabel("Nombre: "));
-        dialog.add(nameField);
-        dialog.add(new JLabel("Precio: "));
-        dialog.add(priceField);
-        dialog.add(new JLabel("Cantidad: "));
-        dialog.add(quantityField);
-        dialog.add(new JLabel("Categoria: "));
-        dialog.add(categoryField);
-        dialog.add(new JLabel("Proveedor: "));
-        dialog.add(supplierField);
-        dialog.add(new JLabel("Estado: "));
-        dialog.add(statusField);
-        dialog.add(new JLabel("Descripcion: "));
-        dialog.add(descriptionField);
+        // Crear cuadro de diálogo para modificar
+        JLabel nameLabel = new JLabel("Nombre: ");
+        nameLabel.setBounds(xLabel, y, widthLabel, height);
+        JTextField nameField = new JTextField(name, 20);
+        nameField.setBounds(xField, y, widthField, height);
 
+        y += 35;
+        JLabel priceLabel = new JLabel("Precio: ");
+        priceLabel.setBounds(xLabel, y, widthLabel, height);
+        JTextField priceField = new JTextField(String.valueOf(price),20);
+        priceField.setBounds(xField, y, widthField, height);
+
+        y += 35;
+        JLabel quantityLabel = new JLabel("Cantidad: ");
+        quantityLabel.setBounds(xLabel, y, widthLabel, height);
+        JTextField quantityField = new JTextField(String.valueOf(quantity),20);
+        quantityField.setBounds(xField, y, widthField, height);
+
+        y += 35;
+        JLabel categoryLabel = new JLabel("Cateogoria: ");
+        categoryLabel.setBounds(xLabel, y, widthLabel, height);
+        JTextField categoryField = new JTextField(category,20);
+        categoryField.setBounds(xField, y, widthField, height);
+
+        y += 35;
+        JLabel supplierLabel = new JLabel("Proveedor:");
+        supplierLabel.setBounds(xLabel, y, widthLabel, height);
+        JTextField supplierField = new JTextField(supplier,20);
+        supplierField.setBounds(xField, y, widthField, height);
+
+        y += 35;
+        JLabel statusLabel = new JLabel("Estado:");
+        statusLabel.setBounds(xLabel, y, widthLabel, height);
+        JTextField statusField = new JTextField(status,20);
+        statusField.setBounds(xField, y, widthField, height);
+
+        y += 35;
+        JLabel descriptionLabel = new JLabel("Descripción: ");
+        descriptionLabel.setBounds(xLabel, y, widthLabel, height);
+        JTextField descriptionField = new JTextField(description,20);
+        descriptionField.setBounds(xField, y, widthField, height);
+
+        y += 35;
+        JLabel imageLabel = new JLabel("Imagen: ");
+        imageLabel.setBounds(xLabel, y, widthLabel, height);
+        JButton buttonImage = new JButton("Seleccionar Imagen");
+        buttonImage.setBounds(xField, y, widthField, height);
+
+        JLabel labelImage = new JLabel("Ninguna imagen seleccionada");
+        labelImage.setBounds(xField, y + 30, widthField, height);
+
+        buttonImage.addActionListener(i -> {
+            JFileChooser fileChooser = new JFileChooser();
+            fileChooser.setFileFilter(new FileNameExtensionFilter("Imágenes", "jpg", "png", "jpeg"));
+            int rs = fileChooser.showOpenDialog(dialog);
+
+            if(rs == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = fileChooser.getSelectedFile();
+                labelImage.setText(selectedFile.getName());
+
+                try {
+                    imageData.set(Files.readAllBytes(selectedFile.toPath())); // Actualizar la imagen
+                } catch (IOException ex) {
+                    JOptionPane.showMessageDialog(dialog, "Error al cargar la imagen.", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        y += 60;
         JButton buttonActualizar = new JButton("Actualizar");
+        buttonActualizar.setBounds(xField, y, widthField, height);
+
         buttonActualizar.addActionListener(e -> {
-            String newName = nameField.getText();
+            String newName = nameField.getText().trim();
             int newPrice = 0;
             int newQuantity = 0;
-            String newCategory = categoryField.getText();
-            String newSupplier = supplierField.getText();
-            String newStatus = statusField.getText();
-            String newDescription= descriptionField.getText();
+            String newCategory = categoryField.getText().trim();
+            String newSupplier = supplierField.getText().trim();
+            String newStatus = statusField.getText().trim();
+            String newDescription= descriptionField.getText().trim();
             try {
-                newPrice = Integer.parseInt(priceField.getText());
-                newQuantity = Integer.parseInt(quantityField.getText());
+                newPrice = Integer.parseInt(priceField.getText().trim());
+                newQuantity = Integer.parseInt(quantityField.getText().trim());
             } catch (NumberFormatException numberFormatException) {
                 JOptionPane.showMessageDialog(dialog, "Ingrese valores numéricos válidos.", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
@@ -285,23 +454,47 @@ public class JdbcProductsMaintenance extends JFrame {
                 JOptionPane.showMessageDialog(dialog, "Debe ingresar la descripción", "Error", JOptionPane.ERROR_MESSAGE);
                 return;
             }
+
             // Actualizar producto de base de datos
-            productRepository.save(new Product(id, newName, newPrice, newQuantity, newCategory, newSupplier, newStatus, newDescription));
+            productRepository.save(new Product(id, newName, newPrice, newQuantity, newCategory, newSupplier, newStatus, newDescription, imageData.get()));
+            actualizarTablaProductos(); 
 
             //Reflejar cambios en la tabla
-            productTableModel.setValueAt(newName, selectedRow, 1);
-            productTableModel.setValueAt(newPrice, selectedRow, 2);
-            productTableModel.setValueAt(newQuantity, selectedRow, 3);
-            productTableModel.setValueAt(newCategory, selectedRow, 4);
-            productTableModel.setValueAt(newSupplier, selectedRow, 5);
-            productTableModel.setValueAt(newStatus, selectedRow, 6);
-            productTableModel.setValueAt(newDescription, selectedRow, 7);
-            productTableModel.fireTableDataChanged();
+            if(selectedRow < productTableModel.getRowCount()) {
+                productTableModel.setValueAt(newName, selectedRow, 1);
+                productTableModel.setValueAt(newPrice, selectedRow, 2);
+                productTableModel.setValueAt(newQuantity, selectedRow, 3);
+                productTableModel.setValueAt(newCategory, selectedRow, 4);
+                productTableModel.setValueAt(newSupplier, selectedRow, 5);
+                productTableModel.setValueAt(newStatus, selectedRow, 6);
+                productTableModel.setValueAt(newDescription, selectedRow, 7);
+                productTableModel.fireTableDataChanged();
+            }
             JOptionPane.showMessageDialog(this, "Producto modificado correctamente", "Éxito", JOptionPane.INFORMATION_MESSAGE);
             dialog.dispose();
         });
-        dialog.add(buttonActualizar);
-        dialog.pack();
+
+        panelForm.add(nameLabel);
+        panelForm.add(nameField);
+        panelForm.add(priceLabel);
+        panelForm.add(priceField);
+        panelForm.add(quantityLabel);
+        panelForm.add(quantityField);
+        panelForm.add(categoryLabel);
+        panelForm.add(categoryField);
+        panelForm.add(supplierLabel);
+        panelForm.add(supplierField);
+        panelForm.add(statusLabel);
+        panelForm.add(statusField);
+        panelForm.add(descriptionLabel);
+        panelForm.add(descriptionField);
+        panelForm.add(imageLabel);
+        panelForm.add(buttonImage);
+        panelForm.add(labelImage);
+        panelForm.add(buttonActualizar);
+
+        dialog.add(panelForm, BorderLayout.CENTER);
+        dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
     }
 
@@ -331,7 +524,7 @@ public class JdbcProductsMaintenance extends JFrame {
 
     private void consultarProducto() {
         int selectedRow = jTable.getSelectedRow();
-        if(selectedRow == -1) {
+        if (selectedRow == -1) {
             JOptionPane.showMessageDialog(this,
                     "Seleccione un producto para la consulta",
                     "Error", JOptionPane.ERROR_MESSAGE);
@@ -347,41 +540,71 @@ public class JdbcProductsMaintenance extends JFrame {
         String supplier = (String) productTableModel.getValueAt(selectedRow, 5);
         String status = (String) productTableModel.getValueAt(selectedRow, 6);
         String description = (String) productTableModel.getValueAt(selectedRow, 7);
+        ImageIcon imageIcon = (ImageIcon) productTableModel.getValueAt(selectedRow, 8);
 
-        // Crear un panel para mostrar la información
-        JPanel panelInformation = new JPanel(new GridLayout(8, 2));
+        // Panel de la imagen
+        JLabel imageLabel = new JLabel();
+        imageLabel.setHorizontalAlignment(JLabel.CENTER);
 
-        panelInformation.add(new JLabel("ID: "));
-        panelInformation.add(new JLabel(String.valueOf(id)));
-        panelInformation.add(new JLabel("Nombre: "));
-        panelInformation.add(new JLabel(String.valueOf(name)));
-        panelInformation.add(new JLabel("Precio: "));
-        panelInformation.add(new JLabel(String.valueOf(price)));
-        panelInformation.add(new JLabel("Cantidad: "));
-        panelInformation.add(new JLabel(String.valueOf(quantity)));
-        panelInformation.add(new JLabel("Categoria: "));
-        panelInformation.add(new JLabel(String.valueOf(category)));
-        panelInformation.add(new JLabel("Proveedor: "));
-        panelInformation.add(new JLabel(String.valueOf(supplier)));
-        panelInformation.add(new JLabel("Estado: "));
-        panelInformation.add(new JLabel(String.valueOf(status)));
-        panelInformation.add(new JLabel("Descripción: "));
-        panelInformation.add(new JLabel(String.valueOf(description)));
+        if (imageIcon != null) {
+            Image image = imageIcon.getImage().getScaledInstance(150, 150, Image.SCALE_SMOOTH);
+            imageLabel.setIcon(new ImageIcon(image));
+        } else {
+            imageLabel.setText("No hay imagen disponible");
+        }
 
-        // Crear un cuadro de diálogo para mostrar la información
+        JPanel imagePanel = new JPanel();
+        imagePanel.add(imageLabel);
+
+        // Panel de información con recuadro
+        JPanel infoPanel = new JPanel(new GridLayout(8, 2, 10, 10));
+        infoPanel.setBorder(BorderFactory.createTitledBorder("Detalles del Producto"));
+
+        infoPanel.add(new JLabel("ID:"));
+        infoPanel.add(new JLabel(String.valueOf(id)));
+
+        infoPanel.add(new JLabel("Nombre:"));
+        infoPanel.add(new JLabel(name));
+
+        infoPanel.add(new JLabel("Precio:"));
+        infoPanel.add(new JLabel("$" + price));
+
+        infoPanel.add(new JLabel("Cantidad:"));
+        infoPanel.add(new JLabel(String.valueOf(quantity)));
+
+        infoPanel.add(new JLabel("Categoría:"));
+        infoPanel.add(new JLabel(category));
+
+        infoPanel.add(new JLabel("Proveedor:"));
+        infoPanel.add(new JLabel(supplier));
+
+        infoPanel.add(new JLabel("Estado:"));
+        infoPanel.add(new JLabel(status));
+
+        infoPanel.add(new JLabel("Descripción:"));
+        infoPanel.add(new JLabel(description));
+
+        // Panel principal
+        JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        mainPanel.add(imagePanel, BorderLayout.NORTH);
+        mainPanel.add(infoPanel, BorderLayout.CENTER);
+
+        // Crear el cuadro de diálogo
         JDialog dialog = new JDialog(this, "Información de Producto", true);
-        dialog.setLayout(new BorderLayout(5, 5));
-        dialog.add(panelInformation, BorderLayout.CENTER);
+        dialog.setLayout(new BorderLayout(10, 10));
 
-        // Botón para cerrar
+        // Botón de cierre
         JButton closeButton = new JButton("Cerrar");
         closeButton.addActionListener(e -> dialog.dispose());
 
         JPanel buttonPanel = new JPanel();
         buttonPanel.add(closeButton);
+
+        dialog.add(mainPanel, BorderLayout.CENTER);
         dialog.add(buttonPanel, BorderLayout.SOUTH);
 
-        dialog.setSize(300, 200);
+        dialog.setSize(400, 500);
         dialog.setLocationRelativeTo(this);
         dialog.setVisible(true);
     }
@@ -403,7 +626,7 @@ public class JdbcProductsMaintenance extends JFrame {
             products = productRepository.findAll();
             for(Product product: products) {
                 Object[] row = {product.getId(), product.getName(), product.getPrice(), product.getQuantity(), product.getCategory(), product.getSupplier(),
-                                product.getStatus(), product.getDescription()};
+                        product.getStatus(), product.getDescription(), obtenerImagenDesdeBytes(product.getImage())};
                 rows.add(row);
             }
         }
@@ -413,7 +636,7 @@ public class JdbcProductsMaintenance extends JFrame {
             rows.clear();
             for(Product product: products) {
                 Object[] row = {product.getId(), product.getName(), product.getPrice(), product.getQuantity(), product.getCategory(), product.getSupplier(),
-                        product.getStatus(), product.getDescription()};
+                        product.getStatus(), product.getDescription(), obtenerImagenDesdeBytes(product.getImage())};
                 rows.add(row);
             }
             fireTableDataChanged(); // Notificar actualización de la tabla
@@ -447,6 +670,13 @@ public class JdbcProductsMaintenance extends JFrame {
         @Override
         public String getColumnName(int column) {
             return columns[column];
+        }
+
+        private ImageIcon obtenerImagenDesdeBytes(byte[] imageData) {
+            if (imageData != null) {
+                return new ImageIcon(new ImageIcon(imageData).getImage().getScaledInstance(50, 50, Image.SCALE_SMOOTH));
+            }
+            return null;
         }
     }
 }
